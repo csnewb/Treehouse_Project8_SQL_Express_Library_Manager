@@ -47,9 +47,13 @@ router.post('/books/new', asyncHandler(async (req, res) => {
     res.redirect('/'); // Redirect to home after a successful creation
   } catch (error) {
     if (error.name === 'SequelizeValidationError') {
+      console.log(`SequelizeValidationError caught`)
       // Handle validation errors here
+
+      // Here we are collecting the data that we do have so that we can rerender the form with data
       book = await Book.build(req.body);
-      res.render('/books/new', { book, errors: error.errors });
+      console.log(book)
+      res.render('new-book', { book, errors: error.errors });
     } else {
       throw error; // Unhandled error
     }
@@ -60,28 +64,51 @@ router.post('/books/new', asyncHandler(async (req, res) => {
 
 // Update Book Form
 router.get('/books/:id', asyncHandler(async (req, res) => {
-  const book = await Book.findByPk(req.params.id)
-  res.render('update-book', { book, title: book.title });
+  try {
+    const book = await Book.findByPk(req.params.id)
+    if (book) {
+      res.render('update-book', { book, title: book.title });
+    }else {
+      console.log(`no book found with id: ${req.params.id}`)
+      res.render('page-not-found')
+    }
+
+  } catch (error) {
+    console.log(`unhandled error`)
+    console.log(error)
+    throw error; // Unhandled error
+  }
+
+
 }));
 
 // Update Book
 router.post('/books/:id', asyncHandler(async (req, res) => {
-  let book;
+  console.log(`entered post route for book id: ${req.params.id}`)
   try {
-    book = await Book.findByPk(req.params.id);
+    const book = await Book.findByPk(req.params.id);
     if (book) {
       await book.update(req.body);
       res.redirect('/'); // Redirect to home after a successful update
     } else {
-      res.sendStatus(404); // Book not found
+      console.log(`no book found with id: ${req.params.id}`)
+      res.render('page-not-found')
     }
   } catch (error) {
+    console.log(error)
     if (error.name === 'SequelizeValidationError') {
+      console.log(`SequelizeValidationError caught`)
       // Handle validation errors here
+
+      // Here we are collecting the data that we do have so that we can rerender the form with data
+      // as entered instead of pulled from the db, which would wipe out the user's changes
       book = await Book.build(req.body);
-      book.id = req.params.id; // preserve id
-      res.render('books/' + book.id , { book, errors: error.errors });
+      book.id = req.params.id; // pull in the id from the params to put into the form data
+      console.log(book)
+      res.render(`update-book`, { book, errors: error.errors });
     } else {
+      console.log(`unhandled error`)
+      console.log(error)
       throw error; // Unhandled error
     }
   }

@@ -20,6 +20,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
+
 // Sequelize authentication
 db.sequelize.authenticate()
     .then(() => {
@@ -47,19 +49,29 @@ app.use(function(req, res, next) {
   next(createError(404));
 });
 
-// error handler
+// error handler that will render the error.pug view
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error', {
-      error: {
-          status: err.status,
-          message: err.message
-      }});
+    // log the error
+    console.log('ERROR tripped in middleware:', err);
+
+    if (err.status === 404) {
+        res.render('page-not-found')
+    }
+
+    // render the error page
+    res.status(err.status || 500).render('error', {
+        error: {
+            status: err.status,
+            message: err.message
+        }
+    });
 });
+
+
+
 
 module.exports = app;
